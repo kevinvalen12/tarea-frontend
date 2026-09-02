@@ -5,14 +5,17 @@ on:
     branches:
       - main
       - production
+
   pull_request:
     branches:
       - main
       - production
 
 jobs:
+
   build-and-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -30,13 +33,18 @@ jobs:
 
       - name: Build
         run: pnpm run build
- publish:
+
+
+  publish:
     needs: build-and-test
     if: github.event_name == 'push'
+
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout código
         uses: actions/checkout@v4
@@ -49,16 +57,19 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build y push de la imagen
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ghcr.io/kevinvalen12/tarea-backend:${{ github.ref_name }}
+          tags: ghcr.io/kevinvalen12/tarea-frontend:${{ github.ref_name }}
+
 
   deploy_pre:
     needs: publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Conectar a Tailscale
         uses: tailscale/github-action@v2
@@ -77,15 +88,18 @@ jobs:
       - name: Desplegar en ambiente PRE
         run: |
           ssh -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            cd /opt/apps/tareas-pre/backend &&
+            cd /opt/apps/tareas-pre/frontend &&
             docker compose pull &&
             docker compose up -d
           "
 
+
   deploy_pro:
     needs: publish
     if: github.event_name == 'push' && github.ref == 'refs/heads/production'
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Conectar a Tailscale
         uses: tailscale/github-action@v2
@@ -104,7 +118,7 @@ jobs:
       - name: Desplegar en ambiente PRODUCCIÓN
         run: |
           ssh -i ~/.ssh/id_ed25519 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-            cd /opt/apps/tareas-pro/backend &&
+            cd /opt/apps/tareas-pro/frontend &&
             docker compose pull &&
             docker compose up -d
           "
